@@ -1,0 +1,68 @@
+name: Sync Gitee source and deploy GitHub Pages
+
+on:
+  schedule:
+    # GitHub scheduled workflows run in UTC. This runs once per hour.
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gitee-pages-sync
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GITEE_REPOSITORY: yu-zhishan/consumables-platform
+      VITE_BASE_PATH: /${{ github.event.repository.name }}/
+    steps:
+      - name: Checkout publisher repository
+        uses: actions/checkout@v4
+
+      - name: Clone Gitee source
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -n "$GITEE_TOKEN" ]; then
+            git clone --depth 1 "https://oauth2:${GITEE_TOKEN}@gitee.com/${GITEE_REPOSITORY}.git" source
+          else
+            git clone --depth 1 "https://gitee.com/${GITEE_REPOSITORY}.git" source
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+
+      - name: Install dependencies
+        working-directory: source
+        run: npm ci
+
+      - name: Run tests
+        working-directory: source
+        run: npm test
+
+      - name: Build static prototype
+        working-directory: source
+        run: npm run build
+
+      - name: Disable Jekyll processing
+        run: touch source/dist/.nojekyll
+
+      - name: Publish dist to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./source/dist
+          publish_branch: gh-pages
+          force_orphan: true
+          full_commit_message: "deploy: sync Gitee source ${{ github.run_id }}"
