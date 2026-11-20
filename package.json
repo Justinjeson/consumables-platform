@@ -1,0 +1,18 @@
+{
+  "name": "material-mvp-prototype",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4173",
+    "build": "node verification/generate-admin-prd-doc.mjs && node verification/generate-product-prd-doc.mjs && vite build",
+    "test": "node --test tests/*.test.js",
+    "docs:build": "node verification/generate-admin-prd-doc.mjs && node verification/generate-product-prd-doc.mjs"
+  },
+  "dependencies": {
+    "marked": "^15.0.12",
+    "mermaid": "^11.6.0",
+    "qrcode": "^1.5.4",
+    "vite": "^6.1.0"
+  }
+}
